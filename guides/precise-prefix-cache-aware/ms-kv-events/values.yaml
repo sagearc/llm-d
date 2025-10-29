@@ -1,10 +1,10 @@
 multinode: false
 
 modelArtifacts:
-  uri: "hf://Qwen/Qwen3-0.6B"
-  size: 20Gi
+  uri: "hf://ibm-granite/granite-3.1-8b-instruct"
+  size: 30Gi
   authSecretName: "llm-d-hf-token"
-  name: "Qwen/Qwen3-0.6B"
+  name: "ibm-granite/granite-3.1-8b-instruct"
 
 routing:
   servicePort: 8000
@@ -40,13 +40,14 @@ decode:
       - '-c'
     args:
       - |
-        vllm serve Qwen/Qwen3-0.6B \
+        vllm serve "ibm-granite/granite-3.1-8b-instruct" \
         --host 0.0.0.0 \
         --port 8200 \
         --block-size 64 \
         --prefix-caching-hash-algo sha256_cbor \
         --kv-transfer-config '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}' \
-        --kv-events-config "{\"enable_kv_cache_events\":true,\"publisher\":\"zmq\",\"endpoint\":\"tcp://gaie-${GAIE_RELEASE_NAME_POSTFIX}-epp.${NAMESPACE}.svc.cluster.local:5557\",\"topic\":\"kv@${POD_IP}@Qwen/Qwen3-0.6B\"}"
+        --kv-events-config "{\"enable_kv_cache_events\":true,\"publisher\":\"zmq\",\"endpoint\":\"tcp://gaie-${GAIE_RELEASE_NAME_POSTFIX}-epp.${NAMESPACE}.svc.cluster.local:5557\",\"topic\":\"kv@${POD_IP}@ibm-granite/granite-3.1-8b-instruct\"}" \
+        --tool-call-parser granite
     env:
       - name: GAIE_RELEASE_NAME_POSTFIX # index 0 matters because of set in helmfile
       - name: NAMESPACE

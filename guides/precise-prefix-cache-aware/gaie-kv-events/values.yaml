@@ -48,6 +48,9 @@ inferenceExtension:
               tokenProcessorConfig:
                 blockSize: 64   
                 hashSeed: "42"
+              kvBlockIndexConfig:
+                enableMetrics: true
+                metricsLoggingInterval: 15000000000
         - type: kv-cache-utilization-scorer
         - type: queue-scorer
         - type: max-score-picker
