@@ -49,6 +49,7 @@ decode:
         --kv-events-config "{\"enable_kv_cache_events\":true,\"publisher\":\"zmq\",\"endpoint\":\"tcp://gaie-${GAIE_RELEASE_NAME_POSTFIX}-epp.${NAMESPACE}.svc.cluster.local:5557\",\"topic\":\"kv@${POD_IP}@ibm-granite/granite-3.1-8b-instruct\"}" \
         --enable-auto-tool-choice \
         --tool-call-parser granite
+        --num-gpu-blocks-override 2
     env:
       - name: GAIE_RELEASE_NAME_POSTFIX # index 0 matters because of set in helmfile
       - name: NAMESPACE
