@@ -1,10 +1,10 @@
 multinode: false
 
 modelArtifacts:
-  uri: "hf://Qwen/Qwen3-0.6B"
-  size: 20Gi
+  uri: "hf://Qwen/Qwen3-32B"
+  size: 150Gi
   authSecretName: "llm-d-hf-token"
-  name: "Qwen/Qwen3-0.6B"
+  name: "Qwen/Qwen3-32B"
 
 routing:
   proxy:
@@ -14,37 +14,44 @@ accelerator: # controlls specialized hardware Type
   type: nvidia
 
 decode:
+  parallelism:
+    tensor: 2
   create: true
-  replicas: 2
+  replicas: 8
   monitoring:
     podmonitor:
       enabled: true
-      portName: "vllm"  # decode vLLM service port (from routing.proxy.targetPort)
+      portName: "metrics"  # decode vLLM service port (from routing.proxy.targetPort)
       path: "/metrics"
       interval: "30s"
   containers:
   - name: "vllm"
-    image: ghcr.io/llm-d/llm-d-cuda:v0.4.0
+    image: vllm/vllm-openai:v0.14.1-cu130
     modelCommand: custom
     command:
       - /bin/sh
       - '-c'
     args:
       - |
-        vllm serve Qwen/Qwen3-0.6B \
+        vllm serve Qwen/Qwen3-32B \
+        --enable-lora \
+        --max-lora-rank 64 \
+        --lora-modules shuttle=shuttleai/shuttle-3.5-ckpts deepnews=flyfishxu/DeepNews-LoRA-Qwen3-32B cake=stewy33/Qwen3-32B-cond_tag_ptonly_mixed_original_augmented_direct_egregious_cake_bake-b5ea14d3 past=adamkarvonen/checkpoints_cls_latentqa_past_lens_Qwen3-32B \
         --host 0.0.0.0 \
         --port 8000 \
         --block-size 64 \
+        --tensor-parallel-size 2 \
         --prefix-caching-hash-algo sha256_cbor \
-        --kv-events-config "{\"enable_kv_cache_events\":true,\"publisher\":\"zmq\",\"endpoint\":\"tcp://gaie-${GAIE_RELEASE_NAME_POSTFIX}-epp.${NAMESPACE}.svc.cluster.local:5557\",\"topic\":\"kv@${POD_IP}@Qwen/Qwen3-0.6B\"}"
+        --kv-transfer-config '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}' \
+        --kv-events-config "{\"enable_kv_cache_events\":true,\"publisher\":\"zmq\",\"endpoint\":\"tcp://gaie-${GAIE_RELEASE_NAME_POSTFIX}-epp.${NAMESPACE}.svc.cluster.local:5557\",\"topic\":\"kv@${POD_IP}@Qwen/Qwen3-32B\"}"
     env:
-      - name: GAIE_RELEASE_NAME_POSTFIX # index 0 matters because of set in helmfile
+      - name: GAIE_RELEASE_NAME_POSTFIX # index 0 matters because of set in helmfile, TODO: remove
+      - name: HF_HOME
+        value: /model-cache
       - name: NAMESPACE
         valueFrom:
           fieldRef:
             fieldPath: metadata.namespace # assumed to be the same as the EPP's
-      - name: PYTHONHASHSEED
-        value: "42"
       - name: POD_IP
         valueFrom:
           fieldRef:
@@ -52,21 +59,29 @@ decode:
             fieldPath: status.podIP
       - name: VLLM_LOGGING_LEVEL
         value: DEBUG
+      - name: TRITON_CACHE_DIR
+        value: /.triton-cache
     ports:
       - containerPort: 8000
         name: vllm
         protocol: TCP
     resources:
       limits:
-        nvidia.com/gpu: "1"
+        nvidia.com/gpu: "2"
       requests:
-        nvidia.com/gpu: "1"
-    mountModelVolume: true
+        nvidia.com/gpu: "2"
+    mountModelVolume: false
     volumeMounts:
+    - name: model-cache
+      mountPath: /model-cache
     - name: metrics-volume
       mountPath: /.config
     - name: torch-compile-cache
       mountPath: /.cache
+    - name: shm
+      mountPath: /dev/shm
+    - name: triton-cache
+      mountPath: /.triton-cache
     startupProbe:
       httpGet:
         path: /v1/models
@@ -90,9 +105,18 @@ decode:
       timeoutSeconds: 2
       failureThreshold: 3
   volumes:
+  - name: model-cache
+    persistentVolumeClaim:
+      claimName: model-cache-pvc
   - name: metrics-volume
     emptyDir: {}
   - name: torch-compile-cache
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: 8Gi
+  - name: triton-cache
     emptyDir: {}
 
 # PD disabled in this example
