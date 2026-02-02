@@ -74,15 +74,15 @@ workload:                         # yaml configuration for harness workload(s)
         duration: 26           
       - rate: 60      # stage 16
         duration: 25           
-      lora_traffic_split:               # Optional: MultiLoRA traffic splitting
-        - name: shuttle               # LoRA adapter name
-          split: 0.25                    # Traffic weight (must sum to 1.0)
-        - name: deepnews
-          split: 0.25
-        - name: cake
-          split: 0.25
-        - name: past
-          split: 0.25
+      # lora_traffic_split:               # Optional: MultiLoRA traffic splitting
+      #   - name: shuttle               # LoRA adapter name
+      #     split: 0.25                    # Traffic weight (must sum to 1.0)
+      #   - name: deepnews
+      #     split: 0.25
+      #   - name: cake
+      #     split: 0.25
+      #   - name: past
+      #     split: 0.25
     api:
       type: completion
       streaming: true
@@ -96,7 +96,7 @@ workload:                         # yaml configuration for harness workload(s)
     data:
       type: shared_prefix
       shared_prefix:
-        num_groups: 40                 # Number of distinct prefix, Note: the number of users is num_groups * num_prompts_per_group
+        num_groups: 160                 # Number of distinct prefix, Note: the number of users is num_groups * num_prompts_per_group
         num_prompts_per_group: 5        # Number of unique questions per group (prefix)
         system_prompt_len: 6000         # Length of the first prefix (in tokens), simulate initialization of a system prompt
         question_len: 1200              # Length of the unique question part (in tokens)
