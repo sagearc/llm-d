@@ -37,37 +37,37 @@ workload:                         # yaml configuration for harness workload(s)
         duration: 50            # 15*50  = 750
 
       # Main ladder
-      - rate: 3
+      - rate: 3       # stage 1
         duration: 20
-      - rate: 10
+      - rate: 10      # stage 2
         duration: 20
-      - rate: 15
+      - rate: 15      # stage 3
         duration: 20
-      - rate: 20
+      - rate: 20      # stage 4
         duration: 38           
-      - rate: 22
+      - rate: 22      # stage 5
         duration: 34           
-      - rate: 25
+      - rate: 25      # stage 6
         duration: 30           
-      - rate: 30
+      - rate: 30      # stage 7
         duration: 25           
-      - rate: 35
+      - rate: 35      # stage 8
         duration: 21           
-      - rate: 40               
+      - rate: 40      # stage 9
         duration: 38           
-      - rate: 43
+      - rate: 43      # stage 10
         duration: 36           
-      - rate: 46
+      - rate: 46      # stage 11
         duration: 33           
-      - rate: 49
+      - rate: 49      # stage 12
         duration: 30           
-      - rate: 52
+      - rate: 52      # stage 13
         duration: 29           
-      - rate: 55
+      - rate: 55      # stage 14
         duration: 27           
-      - rate: 57
+      - rate: 57      # stage 15
         duration: 26           
-      - rate: 60
+      - rate: 60      # stage 16
         duration: 25           
       lora_traffic_split:               # Optional: MultiLoRA traffic splitting
         - name: shuttle               # LoRA adapter name
@@ -91,7 +91,7 @@ workload:                         # yaml configuration for harness workload(s)
     data:
       type: shared_prefix
       shared_prefix:
-        num_groups: 150                 # Number of distinct prefix, Note: the number of users is num_groups * num_prompts_per_group
+        num_groups: 40                 # Number of distinct prefix, Note: the number of users is num_groups * num_prompts_per_group
         num_prompts_per_group: 5        # Number of unique questions per group (prefix)
         system_prompt_len: 6000         # Length of the first prefix (in tokens), simulate initialization of a system prompt
         question_len: 1200              # Length of the unique question part (in tokens)
