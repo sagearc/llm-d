@@ -16,16 +16,16 @@ ALL_EXPERIMENTS = [
 ]
 
 RESULTS_DIR = '/Users/sagi/repos/llmd/forks/llm-d/results'
+PLOTS_DIR = '/Users/sagi/repos/llmd/forks/llm-d/plots'
 
-def load_throughput_metrics(experiment_name):
+def load_throughput_metrics(experiment_name, metrics_filename='summary_lifecycle_metrics.json'):
     """Load all throughput metrics for a given experiment."""
-    summary_filename = 'summary_lifecycle_metrics.json'
-    summary_path = Path(RESULTS_DIR) / experiment_name / summary_filename
+    summary_path = Path(RESULTS_DIR) / experiment_name / metrics_filename
     data = json.loads(summary_path.read_text())
     return data['successes']['throughput']
 
 
-def plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_lora):
+def plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_lora, plot_fname_prefix):
     """Plot the LoRA impact comparison showing RANDOM is more affected than PRECISE."""
     
     metrics = [
@@ -132,21 +132,26 @@ def plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_l
     plt.tight_layout()
     
     # Save the plot
-    output_path = Path(RESULTS_DIR) / 'lora_impact_comparison.png'
+    output_path = Path(PLOTS_DIR) / f'{plot_fname_prefix}_lora_impact_comparison.png'
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {output_path}\n")
     
-    plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":
     print("Loading experiment data...")
     
+    summary_fnames = ['summary_lifecycle_metrics.json']
+    summary_fnames += [f'stage_{i}_lifecycle_metrics.json' for i in range(17)]
+
     # Load metrics for all experiments
-    precise_w_lora = load_throughput_metrics(PRECISE_W_LORA)
-    random_w_lora = load_throughput_metrics(RANDOM_W_LORA)
-    precise_wo_lora = load_throughput_metrics(PRECISE_WO_LORA)
-    random_wo_lora = load_throughput_metrics(RANDOM_WO_LORA)
+    for fname in summary_fnames:
+        precise_w_lora = load_throughput_metrics(PRECISE_W_LORA, metrics_filename=fname)
+        random_w_lora = load_throughput_metrics(RANDOM_W_LORA, metrics_filename=fname)
+        precise_wo_lora = load_throughput_metrics(PRECISE_WO_LORA, metrics_filename=fname)
+        random_wo_lora = load_throughput_metrics(RANDOM_WO_LORA, metrics_filename=fname)
     
-    # Analyze and plot LoRA impact
-    plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_lora)
+        # Analyze and plot LoRA impact
+        plot_fname_prefix = fname.removesuffix('_lifecycle_metrics.json')
+        plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_lora, plot_fname_prefix=plot_fname_prefix)
