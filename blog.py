@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-PRECISE_W_LORA = 'lora=4-groups=40-pods=8'
+PRECISE_W_LORA = 'lora=1-base-groups=80-pods=8'
 PRECISE_WO_LORA = 'lora=0-groups=160-pods=8'
 RANDOM_W_LORA = f'{PRECISE_W_LORA}-random'
 RANDOM_WO_LORA = f'{PRECISE_WO_LORA}-random'
@@ -55,36 +55,35 @@ def plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_l
         random_wo = random_wo_lora[metric_key]
         random_w = random_w_lora[metric_key]
         
-        # Calculate impacts
-        precise_impact = precise_w - precise_wo
-        random_impact = random_w - random_wo
+        # Calculate impacts (gap between RANDOM and PRECISE)
+        wo_lora_gap = random_wo - precise_wo
+        w_lora_gap = random_w - precise_w
         
         # Calculate percentages
-        precise_pct = (precise_impact / precise_wo) * 100
-        random_pct = (random_impact / random_wo) * 100
+        wo_lora_pct = (wo_lora_gap / precise_wo) * 100
+        w_lora_pct = (w_lora_gap / precise_w) * 100
         
-        # Impact difference
-        impact_diff = random_impact - precise_impact
+        # Impact difference (how much MORE the gap increased with LoRA)
+        gap_increase = w_lora_gap - wo_lora_gap
         
         # Print analysis
         print(f"{title}:")
-        print(f"  W/O LoRA - PRECISE: {precise_wo:.2f} | RANDOM: {random_wo:.2f}")
-        print(f"  WITH LoRA - PRECISE: {precise_w:.2f} | RANDOM: {random_w:.2f}")
-        print(f"  Impact - PRECISE: {precise_impact:+.2f} ({precise_pct:+.2f}%) | RANDOM: {random_impact:+.2f} ({random_pct:+.2f}%)")
-        print(f"  → RANDOM degraded {abs(impact_diff):.2f} {ylabel} MORE\n")
+        print(f"  W/O LoRA - PRECISE: {precise_wo:.2f} | RANDOM: {random_wo:.2f} | Gap: {wo_lora_gap:+.2f} ({wo_lora_pct:+.2f}%)")
+        print(f"  WITH LoRA - PRECISE: {precise_w:.2f} | RANDOM: {random_w:.2f} | Gap: {w_lora_gap:+.2f} ({w_lora_pct:+.2f}%)")
+        print(f"  → Gap increased by {gap_increase:+.2f} {ylabel} with LoRA\n")
         
         # Create bar chart
-        scenarios = ['PRECISE\nScheduler', 'RANDOM\nScheduler']
+        scenarios = ['WITH LoRA', 'W/O LoRA']
         x = np.arange(len(scenarios))
         width = 0.35
         
-        wo_lora_vals = [precise_wo, random_wo]
-        w_lora_vals = [precise_w, random_w]
+        precise_vals = [precise_w, precise_wo]
+        random_vals = [random_w, random_wo]
         
-        bars1 = ax.bar(x - width/2, wo_lora_vals, width, 
-                      label='W/O LoRA', color='#3498db', alpha=0.85, edgecolor='black', linewidth=1.5)
-        bars2 = ax.bar(x + width/2, w_lora_vals, width, 
-                      label='WITH LoRA', color='#e74c3c', alpha=0.85, edgecolor='black', linewidth=1.5)
+        bars1 = ax.bar(x - width/2, precise_vals, width, 
+                      label='PRECISE', color='#2ecc71', alpha=0.85, edgecolor='black', linewidth=1.5)
+        bars2 = ax.bar(x + width/2, random_vals, width, 
+                      label='ROUND ROBIN', color='#e74c3c', alpha=0.85, edgecolor='black', linewidth=1.5)
         
         ax.set_ylabel(ylabel, fontsize=11, fontweight='bold')
         ax.set_title(title, fontsize=12, fontweight='bold', pad=10)
@@ -104,25 +103,25 @@ def plot_lora_impact(precise_w_lora, random_w_lora, precise_wo_lora, random_wo_l
             ax.text(bar.get_x() + bar.get_width()/2., height,
                    f'{height:.1f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
         
-        # Add impact annotations (degradation arrows)
-        impacts = [precise_impact, random_impact]
-        percentages = [precise_pct, random_pct]
+        # Add impact annotations (gap between PRECISE and RANDOM)
+        gaps = [w_lora_gap, wo_lora_gap]
+        percentages = [w_lora_pct, wo_lora_pct]
         
         for i in range(len(scenarios)):
-            impact = impacts[i]
+            gap = gaps[i]
             pct = percentages[i]
-            wo_val = wo_lora_vals[i]
-            w_val = w_lora_vals[i]
+            precise_val = precise_vals[i]
+            random_val = random_vals[i]
             
-            # Draw arrow showing change
-            arrow_color = 'red' if impact < 0 else 'green'
-            ax.annotate('', xy=(x[i], w_val), xytext=(x[i], wo_val),
+            # Draw arrow showing gap
+            arrow_color = 'red' if gap < 0 else 'green'
+            ax.annotate('', xy=(x[i], random_val), xytext=(x[i], precise_val),
                        arrowprops=dict(arrowstyle='<->', color=arrow_color, lw=2))
             
             # Add label
-            mid_point = (wo_val + w_val) / 2
-            ax.text(x[i] + 0.15, mid_point, f'{impact:+.1f}\n({pct:+.1f}%)',
-                   fontsize=8, fontweight='bold', color='darkred' if impact < 0 else 'darkgreen',
+            mid_point = (precise_val + random_val) / 2
+            ax.text(x[i] + 0.15, mid_point, f'{gap:+.1f}\n({pct:+.1f}%)',
+                   fontsize=8, fontweight='bold', color='darkred' if gap < 0 else 'darkgreen',
                    bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7))
     
     print(f"{'='*80}")
