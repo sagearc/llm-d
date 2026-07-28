@@ -3,7 +3,9 @@
 Our well-lit path guides are documented, tested, and benchmarked recipes to serve LLMs with best-practices for high performance.
 
 > [!IMPORTANT]
-> These guides are intended to be a starting point for your own configuration and deployment of model servers. Our manifests provide basic reusable building blocks for vLLM deployments and llm-d router configuration within these guides but will not support the full range of all possible configurations.
+> These guides are intended to be a starting point for your own configuration and deployment of model servers. Our manifests provide basic reusable building blocks for model server deployments and llm-d router configuration within these guides but will not support the full range of all possible configurations.
+
+See [engine-support.html](./engine-support.html) (interactive) or [engine-support.md](./engine-support.md) for a feature and benchmark comparison across vLLM, SGLang, and TensorRT-LLM.
 
 We currently offer the following:
 

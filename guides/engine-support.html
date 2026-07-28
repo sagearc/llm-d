@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>llm-d Engine Support</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-muted: #656d76;
+    --text-link: #0969da;
+    --row-hover: #f6f8fa;
+    --pill-bg: #f6f8fa;
+    --pill-active-bg: #1f2328;
+    --pill-active-text: #ffffff;
+    --badge-validated-bg: #dafbe1;
+    --badge-validated-text: #1a7f37;
+    --badge-partial-bg: #fff8c5;
+    --badge-partial-text: #9a6700;
+    --badge-none-bg: #ffebe9;
+    --badge-none-text: #cf222e;
+    --badge-na-text: #656d76;
+    --callout-bg: #ddf4ff;
+    --callout-text: #0550ae;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --bg-secondary: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #848d97;
+      --text-link: #58a6ff;
+      --row-hover: #161b22;
+      --pill-bg: #21262d;
+      --pill-active-bg: #e6edf3;
+      --pill-active-text: #0d1117;
+      --badge-validated-bg: #0f2d1a;
+      --badge-validated-text: #3fb950;
+      --badge-partial-bg: #2d2100;
+      --badge-partial-text: #d29922;
+      --badge-none-bg: #2d0f0f;
+      --badge-none-text: #f85149;
+      --badge-na-text: #484f58;
+      --callout-bg: #051d4d;
+      --callout-text: #79c0ff;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    padding: 32px 40px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .tagline { color: var(--text-muted); margin-bottom: 28px; font-size: 13px; }
+  h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 28px 0 10px; }
+
+  /* Filter pills */
+  .filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--pill-bg);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .pill:hover { border-color: var(--text-muted); }
+  .pill.active { background: var(--pill-active-bg); color: var(--pill-active-text); border-color: var(--pill-active-bg); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th.engine { text-align: center; }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.08s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--row-hover); }
+  tbody tr.hidden { display: none; }
+  td { padding: 9px 12px; vertical-align: middle; }
+  td.feature { font-weight: 500; }
+  td.engine { text-align: center; }
+  td.na { text-align: center; color: var(--badge-na-text); font-size: 16px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge.validated { background: var(--badge-validated-bg); color: var(--badge-validated-text); }
+  .badge.partial   { background: var(--badge-partial-bg);   color: var(--badge-partial-text); cursor: help; }
+  .badge.none      { background: var(--badge-none-bg);      color: var(--badge-none-text); }
+
+  /* Callout */
+  .callout {
+    background: var(--callout-bg);
+    color: var(--callout-text);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  /* Benchmark table: right-align numbers */
+  .bench td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .bench thead th:last-child { text-align: right; }
+  .bench td:nth-child(4) { text-align: center; color: var(--text-muted); }
+  .bench thead th:nth-child(4) { text-align: center; }
+
+  /* Hardware table */
+  .hw td.engine { width: 80px; }
+
+  .footnotes { margin-top: 10px; color: var(--text-muted); font-size: 11px; line-height: 1.8; }
+  .footnotes a { color: var(--text-link); text-decoration: none; }
+  .footnotes a:hover { text-decoration: underline; }
+
+  /* Column dimming when filtering */
+  col.dimmed { opacity: 0.25; }
+</style>
+</head>
+<body>
+
+<h1>llm-d Engine Support</h1>
+<p class="tagline">Feature and hardware coverage across vLLM, SGLang, and TensorRT-LLM.</p>
+
+<!-- ── Feature Support ─────────────────────────────────────────── -->
+<h2>Feature Support</h2>
+
+<div class="filters" id="engine-filters">
+  <span class="pill active" data-engine="all">All</span>
+  <span class="pill" data-engine="vllm">vLLM</span>
+  <span class="pill" data-engine="sglang">SGLang</span>
+  <span class="pill" data-engine="trtllm">TRT-LLM</span>
+</div>
+
+<table id="feature-table">
+  <colgroup>
+    <col id="col-feature">
+    <col id="col-vllm">
+    <col id="col-sglang">
+    <col id="col-trtllm">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th class="engine">vLLM</th>
+      <th class="engine">SGLang</th>
+      <th class="engine">TRT-LLM</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- engines attr: comma-separated engines that have validated/partial support -->
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/optimized-baseline/README.md" data-engines="vllm,sglang,trtllm">
+      <td class="feature">Optimized Baseline</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/optimized-baseline/README.md" data-engines="vllm,sglang">
+      <td class="feature">Approx Prefix Routing</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/precise-prefix-cache-routing/README.md" data-engines="vllm,sglang">
+      <td class="feature">Precise Prefix Routing</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/predicted-latency-routing/README.md" data-engines="vllm,sglang">
+      <td class="feature">Predicted Latency Routing</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="Feature works; no SGLang guide yet">Partial</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md" data-engines="vllm,sglang">
+      <td class="feature">Tiered Cache L1/L2 <span style="color:var(--text-muted);font-weight:400">(CPU offload)</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md" data-engines="vllm">
+      <td class="feature">Tiered Cache L3/L4 <span style="color:var(--text-muted);font-weight:400">(remote store)</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="Not started — blocked on SGLang renderer (issue #1980)">Partial</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/pd-disaggregation/README.md" data-engines="vllm,sglang">
+      <td class="feature">P/D Disaggregation</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="NVIDIA-only; RDMA recipes in progress">Partial</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/wide-ep-lws/README.md" data-engines="vllm">
+      <td class="feature">Wide Expert Parallelism</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="Not started">Partial</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/agentic-serving/README.md" data-engines="vllm">
+      <td class="feature">Agentic Serving</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="Engine-agnostic parts work; no SGLang guide">Partial</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/multimodal-serving/README.md" data-engines="vllm">
+      <td class="feature">Multimodal Serving</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge none">Not started</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/flow-control/README.md" data-engines="vllm,sglang,trtllm">
+      <td class="feature">Flow Control</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+    </tr>
+    <tr data-href="https://github.com/llm-d/llm-d/blob/main/guides/workload-autoscaling/README.md" data-engines="vllm">
+      <td class="feature">Workload Autoscaling</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="Theoretically works; not yet tested with SGLang">Partial</span></td>
+      <td class="na">—</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── Hardware Support ────────────────────────────────────────── -->
+<h2>Hardware Support</h2>
+
+<table class="hw">
+  <thead>
+    <tr>
+      <th>Accelerator</th>
+      <th class="engine">vLLM</th>
+      <th class="engine">SGLang</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="feature">NVIDIA GPU</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+    </tr>
+    <tr>
+      <td class="feature">AMD ROCm</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+    </tr>
+    <tr>
+      <td class="feature">Google TPU</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="engine"><span class="badge partial" title="Blocked on upstream sglang-jax issue #646">Partial</span></td>
+    </tr>
+    <tr>
+      <td class="feature">Intel XPU / Gaudi</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="na">—</td>
+    </tr>
+    <tr>
+      <td class="feature">CPU</td>
+      <td class="engine"><span class="badge validated">Validated</span></td>
+      <td class="na">—</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── Prefill Throughput ──────────────────────────────────────── -->
+<h2>Prefill Throughput</h2>
+
+<div class="callout">SGLang achieves ~1.9× vLLM prefill throughput on identical H100 hardware.</div>
+
+<table class="bench">
+  <thead>
+    <tr>
+      <th>Hardware</th>
+      <th>Engine</th>
+      <th>Model</th>
+      <th>TP</th>
+      <th>tok/s</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>H100 80 GB</td>
+      <td>vLLM</td>
+      <td>gpt-oss-120B <span style="color:var(--text-muted)">(MoE)</span></td>
+      <td>1</td>
+      <td>39,065</td>
+    </tr>
+    <tr>
+      <td>H100 80 GB</td>
+      <td>SGLang</td>
+      <td>Qwen3-32B</td>
+      <td>2</td>
+      <td>30,720</td>
+    </tr>
+    <tr>
+      <td>TPU v7x</td>
+      <td>vLLM</td>
+      <td>Qwen3-32B</td>
+      <td>8</td>
+      <td>27,336</td>
+    </tr>
+    <tr>
+      <td>TPU v6e</td>
+      <td>vLLM</td>
+      <td>Qwen3-32B</td>
+      <td>8</td>
+      <td>26,290</td>
+    </tr>
+    <tr>
+      <td>H100 80 GB</td>
+      <td>vLLM</td>
+      <td>Qwen3-32B</td>
+      <td>2</td>
+      <td>15,928</td>
+    </tr>
+    <tr>
+      <td>CPU <span style="color:var(--text-muted)">(AMX)</span></td>
+      <td>vLLM</td>
+      <td>Llama-3.2-3B</td>
+      <td>1</td>
+      <td>1,970</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="footnotes">
+  Measured at <code>--max-num-batched-tokens=8192</code> (CPU path at 2048).
+  To calibrate for your stack, see <a href="https://github.com/llm-d/llm-d/blob/main/guides/recipes/router/calibration/README.md" target="_blank">recipes/router/calibration</a>.
+</p>
+
+<script>
+  // Row click → open guide
+  document.querySelectorAll('#feature-table tbody tr[data-href]').forEach(row => {
+    row.addEventListener('click', () => window.open(row.dataset.href, '_blank'));
+  });
+
+  // Engine filter pills
+  const pills = document.querySelectorAll('#engine-filters .pill');
+  const rows  = document.querySelectorAll('#feature-table tbody tr');
+  const cols  = { vllm: document.getElementById('col-vllm'), sglang: document.getElementById('col-sglang'), trtllm: document.getElementById('col-trtllm') };
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      const engine = pill.dataset.engine;
+
+      // Show/hide rows
+      rows.forEach(row => {
+        if (engine === 'all') {
+          row.classList.remove('hidden');
+        } else {
+          const engines = (row.dataset.engines || '').split(',');
+          row.classList.toggle('hidden', !engines.includes(engine));
+        }
+      });
+
+      // Dim irrelevant columns
+      Object.entries(cols).forEach(([e, col]) => {
+        col.className = (engine !== 'all' && engine !== e) ? 'dimmed' : '';
+      });
+    });
+  });
+</script>
+</body>
+</html>
